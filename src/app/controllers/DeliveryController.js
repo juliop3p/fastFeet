@@ -1,14 +1,39 @@
 import * as Yup from 'yup';
+import { Op } from 'sequelize';
 
 import Delivery from '../models/Delivery';
 import Recipients from '../models/Recipients';
 import DeliveryMen from '../models/DeliveryMen';
-// import File from '../models/File';
 
 import NewDeliveryMail from '../jobs/NewDeliveryMail';
 import Queue from '../../lib/Queue';
 
 class DeliveryController {
+  async index(req, res) {
+    const { id, delivered = false } = req.query;
+
+    if (delivered) {
+      const deliveries = await Delivery.findAll({
+        where: {
+          deliveryman_id: id,
+          canceled_at: null,
+          signature_id: { [Op.ne]: null },
+        },
+      });
+
+      return res.json(deliveries);
+    }
+
+    const deliveries = await Delivery.findAll({
+      where: {
+        deliveryman_id: id,
+        canceled_at: null,
+      },
+    });
+
+    return res.json(deliveries);
+  }
+
   async store(req, res) {
     const schema = Yup.object().shape({
       recipient_id: Yup.number().required(),
