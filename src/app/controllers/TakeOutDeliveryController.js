@@ -1,4 +1,12 @@
-import { isBefore, isAfter, startOfDay, endOfDay, parseISO } from 'date-fns';
+import {
+  isBefore,
+  isAfter,
+  startOfDay,
+  endOfDay,
+  setSeconds,
+  setMinutes,
+  setHours,
+} from 'date-fns';
 import { Op } from 'sequelize';
 import Delivery from '../models/Delivery';
 
@@ -20,10 +28,15 @@ class TakeOutDeliveryController {
     }
 
     const start_date = new Date();
+    const initial_date = setSeconds(setMinutes(setHours(start_date, 8), 0), 0);
+    const terminate_date = setSeconds(
+      setMinutes(setHours(start_date, 18), 0),
+      0
+    );
 
     if (
-      !isAfter(start_date, parseISO('2020-04-23T08:00:00-03:00')) ||
-      !isBefore(start_date, parseISO('2020-04-23T18:00:00-03:00'))
+      !isAfter(start_date, initial_date) ||
+      !isBefore(start_date, terminate_date)
     ) {
       return res
         .status(400)

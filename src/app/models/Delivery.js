@@ -43,6 +43,11 @@ class Deliveries extends Model {
       foreignKey: 'signature_id',
       as: 'signature',
     });
+
+    this.hasMany(models.Problems, {
+      foreignKey: 'delivery_id',
+      as: 'problems',
+    });
   }
 }
 
