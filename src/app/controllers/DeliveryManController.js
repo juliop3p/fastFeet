@@ -1,12 +1,12 @@
 import * as Yup from 'yup';
-import DeliveryMen from '../models/DeliveryMen';
+import DeliveryMan from '../models/DeliveryMan';
 import File from '../models/File';
 
-class DeliveryMenController {
+class DeliveryManController {
   async index(req, res) {
     const { page = 1 } = req.query;
 
-    const deliveryMen = await DeliveryMen.findAll({
+    const deliveryman = await DeliveryMan.findAll({
       order: [['id', 'DESC']],
       attributes: ['id', 'name', 'email'],
       limit: 20,
@@ -20,7 +20,7 @@ class DeliveryMenController {
       ],
     });
 
-    return res.json(deliveryMen);
+    return res.json(deliveryman);
   }
 
   async store(req, res) {
@@ -33,15 +33,15 @@ class DeliveryMenController {
       return res.status(400).json({ error: 'Validation fails' });
     }
 
-    const deliveryMan = await DeliveryMen.findOne({
+    const deliveryman = await DeliveryMan.findOne({
       where: { email: req.body.email },
     });
 
-    if (deliveryMan) {
+    if (deliveryman) {
       return res.status(400).json({ error: 'Delivery men already registered' });
     }
 
-    const { id, name, email } = await DeliveryMen.create({
+    const { id, name, email } = await DeliveryMan.create({
       name: req.body.name,
       email: req.body.email,
     });
@@ -50,6 +50,12 @@ class DeliveryMenController {
   }
 
   async update(req, res) {
+    const deliveryman = await DeliveryMan.findByPk(req.params.id);
+
+    if (!deliveryman) {
+      return res.status(400).json({ error: 'Delivery Man not found' });
+    }
+
     const schema = Yup.object().shape({
       name: Yup.string(),
       email: Yup.string(),
@@ -60,13 +66,7 @@ class DeliveryMenController {
       return res.status(400).json({ error: 'Validation fails' });
     }
 
-    const deliveryMan = await DeliveryMen.findByPk(req.params.id);
-
-    if (!deliveryMan) {
-      return res.status(400).json({ error: 'Delivery Man not found' });
-    }
-
-    const { id, name, email } = await deliveryMan.update(req.body);
+    const { id, name, email } = await deliveryman.update(req.body);
 
     return res.json({
       id,
@@ -76,16 +76,16 @@ class DeliveryMenController {
   }
 
   async destroy(req, res) {
-    const deliveryMan = await DeliveryMen.findByPk(req.params.id);
+    const deliveryman = await DeliveryMan.findByPk(req.params.id);
 
-    if (!deliveryMan) {
+    if (!deliveryman) {
       return res.status(400).json({ error: 'Delivery Man not found' });
     }
 
-    await deliveryMan.destroy();
+    await deliveryman.destroy();
 
     return res.json({});
   }
 }
 
-export default new DeliveryMenController();
+export default new DeliveryManController();

@@ -1,11 +1,11 @@
-import Problems from '../models/Problems';
+import Problem from '../models/Problem';
 import Delivery from '../models/Delivery';
 
 class CancelDeliveryController {
   async update(req, res) {
     const { id } = req.params;
 
-    const problem = await Problems.findByPk(id);
+    const problem = await Problem.findByPk(id);
 
     if (!problem) {
       return res.status(400).json({ error: 'Problem not found' });

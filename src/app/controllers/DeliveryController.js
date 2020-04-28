@@ -1,46 +1,38 @@
 import * as Yup from 'yup';
-import { Op } from 'sequelize';
-
 import Delivery from '../models/Delivery';
-import Recipients from '../models/Recipients';
-import DeliveryMen from '../models/DeliveryMen';
-import File from '../models/File';
-
+import Recipient from '../models/Recipient';
+import DeliveryMan from '../models/DeliveryMan';
 import NewDeliveryMail from '../jobs/NewDeliveryMail';
 import Queue from '../../lib/Queue';
 
-/*
-  TO DO
-
-  1) make this controller only CRUD (admin).
-
-  2) Create another controller for updates and status (deliveryman).
-*/
-
 class DeliveryController {
   async index(req, res) {
-    const { id, delivered = false } = req.query;
-
-    if (delivered) {
-      const deliveries = await Delivery.findAll({
-        where: {
-          deliveryman_id: id,
-          canceled_at: null,
-          signature_id: { [Op.ne]: null },
-        },
-      });
-
-      return res.json(deliveries);
-    }
+    const { page = 1 } = req.query;
 
     const deliveries = await Delivery.findAll({
-      where: {
-        deliveryman_id: id,
-        canceled_at: null,
-      },
+      limit: 20,
+      offset: (page - 1) * 20,
     });
 
+    if (!deliveries) {
+      return res.status(400).json({ error: 'Deliveries not found' });
+    }
+
     return res.json(deliveries);
+  }
+
+  async show(req, res) {
+    const { id } = req.params;
+
+    const delivery = await Delivery.findOne({
+      where: { id },
+    });
+
+    if (!delivery) {
+      return res.status(400).json({ error: 'Delivery not found' });
+    }
+
+    return res.json(delivery);
   }
 
   async store(req, res) {
@@ -56,9 +48,9 @@ class DeliveryController {
 
     const { recipient_id, deliveryman_id, product } = req.body;
 
-    const recipient = await Recipients.findByPk(recipient_id);
+    const recipient = await Recipient.findByPk(recipient_id);
 
-    const deliveryman = await DeliveryMen.findByPk(deliveryman_id);
+    const deliveryman = await DeliveryMan.findByPk(deliveryman_id);
 
     if (!recipient) {
       return res.status(400).json({ error: 'Recipient not found' });
@@ -88,42 +80,52 @@ class DeliveryController {
   }
 
   async update(req, res) {
-    const { originalname: name, filename: path } = req.file;
     const { id } = req.params;
 
-    const delivery = await Delivery.findByPk(id);
+    const delivery = await Delivery.findOne({
+      where: { id },
+    });
 
     if (!delivery) {
       return res.status(400).json({ error: 'Delivery not found' });
     }
 
-    const file = await File.create({
-      name,
-      path,
+    const schema = Yup.object().shape({
+      recipient_id: Yup.number(),
+      deliveryman_id: Yup.number(),
+      product: Yup.string(),
     });
 
-    const {
-      recipient_id,
-      deliveryman_id,
-      signature_id,
-      product,
-      start_date,
-      end_date,
-    } = await delivery.update({
-      signature_id: file.id,
-      end_date: new Date(),
-    });
+    if (!(await schema.isValid(req.body))) {
+      return res.status(400).json({ error: 'Validation fails' });
+    }
+
+    const { product, recipient_id, deliveryman_id } = await delivery.update(
+      req.body
+    );
 
     return res.json({
       id,
-      deliveryman_id,
       recipient_id,
-      signature_id,
+      deliveryman_id,
       product,
-      start_date,
-      end_date,
-      url: file.url,
     });
+  }
+
+  async destroy(req, res) {
+    const { id } = req.params;
+
+    const delivery = await Delivery.findOne({
+      where: { id },
+    });
+
+    if (!delivery) {
+      return res.status(400).json({ error: 'Delivery not found' });
+    }
+
+    await delivery.destroy();
+
+    return res.json();
   }
 }
 

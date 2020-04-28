@@ -1,10 +1,10 @@
 import * as Yup from 'yup';
-import Problems from '../models/Problems';
+import Problem from '../models/Problem';
 import Delivery from '../models/Delivery';
 
 class ProblemsController {
   async index(req, res) {
-    const problems = await Problems.findAll({
+    const problems = await Problem.findAll({
       attributes: ['id', 'description'],
       include: [
         {
@@ -20,6 +20,10 @@ class ProblemsController {
         },
       ],
     });
+
+    if (!problems) {
+      return res.status(400).json({ error: 'Problems not found' });
+    }
 
     return res.json(problems);
   }
@@ -42,12 +46,18 @@ class ProblemsController {
       ],
       include: [
         {
-          model: Problems,
-          as: 'problems',
+          model: Problem,
+          as: 'problem',
           attributes: ['id', 'description'],
         },
       ],
     });
+
+    if (!delivery) {
+      return res
+        .status(400)
+        .json({ error: "Delivery don't have a problem or don't exist" });
+    }
 
     return res.json(delivery);
   }
@@ -69,7 +79,7 @@ class ProblemsController {
       return res.status(400).json({ error: 'Validation Fails' });
     }
 
-    const { delivery_id, description } = await Problems.create({
+    const { delivery_id, description } = await Problem.create({
       delivery_id: id,
       description: req.body.description,
     });
